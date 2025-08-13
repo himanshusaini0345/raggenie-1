@@ -188,5 +188,5 @@ class AltasMongoDB(BaseVectorDB):
     async def find_similar_documentation(self, datasource, query, count):
        return await self. _find_similar(datasource, self.doc_collection, query, count, self.doc_index_name)
 
-    async def find_similar_cache(self, datasource, query,count = 3):
+    async def find_similar_cache(self, datasource, query,count = 6):
        return await self. _find_similar(datasource, self.cache_collection, query, count, self.cache_index_name)

@@ -120,6 +120,7 @@ class IntentExtracter(AbstractHandler):
             1.Only one intent must be identified.Multiple intents are prohibited.
             2.Pay special attention to whether the previous intent has been completed.
             3.Strictly only if the current user query doesn't clearly match an intent, consider the previous messages to identify the most appropriate intent.
+            4.Striclty any kind of question if not matching exaclty with their intent samples will go to database_agent 
 
             Generate a response for the user query '$question' in the following JSON format:
 
