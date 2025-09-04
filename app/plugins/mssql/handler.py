@@ -5,10 +5,11 @@ import sqlparse
 from .formatter import Formatter
 import uuid
 from app.providers.config import configs
-
+import json
 from app.base.base_plugin import BasePlugin
 from app.base.query_plugin import QueryPlugin
 from app.base.plugin_metadata_mixin import PluginMetadataMixin
+from datetime import datetime
 
 
 class Mssql(Formatter, BasePlugin, QueryPlugin,  PluginMetadataMixin):
@@ -30,7 +31,7 @@ class Mssql(Formatter, BasePlugin, QueryPlugin,  PluginMetadataMixin):
         self.connection = None
 
         self.cursor = None
-        self.max_limit = 250
+        self.max_limit = 25
 
 
     def connect(self):
@@ -215,6 +216,82 @@ class Mssql(Formatter, BasePlugin, QueryPlugin,  PluginMetadataMixin):
         #     return "I didn't get you, Please reframe your question"
 
         return  None
+
+    def insert_chat_history(
+        self,
+        chat_id: str,
+        chat_context_id: str,
+        chat_query: str,
+        chat_answer: dict,
+        chat_context: dict,
+        chat_summary: str,
+        user_id: int,
+        primary_chat: bool = False,
+        chat_status: int = None,
+        feedback_status: int = None,
+        feedback_json: dict = None
+    ):
+        """
+        Insert a chat history record into dbo.chat_histories table.
+        Handles case when chat_answer (out) is empty.
+        """
+
+        try:
+            if not self.connection or not self.cursor:
+                connected, err = self.connect()
+                if not connected:
+                    return False, f"DB connection failed: {err}"
+
+            # Handle empty out
+            if not chat_answer or len(chat_answer) == 0:
+                chat_answer = {"answer": ""}
+
+            # Ensure summary is not null
+            if not chat_summary:
+                chat_summary = chat_query
+
+            query = """
+            INSERT INTO TestDemo.dbo.chat_histories (
+                chat_id,
+                chat_context_id,
+                chat_query,
+                chat_answer,
+                chat_context,
+                chat_summary,
+                chat_status,
+                feedback_status,
+                feedback_json,
+                user_id,
+                primary_chat,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+
+            values = (
+                chat_id,
+                chat_context_id,
+                chat_query,
+                json.dumps(chat_answer, ensure_ascii=False),
+                json.dumps(chat_context or {}, ensure_ascii=False),
+                chat_summary,
+                chat_status,
+                feedback_status,
+                json.dumps(feedback_json or {}, ensure_ascii=False),
+                user_id,
+                1 if primary_chat else 0,
+                datetime.utcnow()
+            )
+
+            self.cursor.execute(query, values)
+            self.connection.commit()
+
+            logger.info(f"Inserted chat_history for chat_id={chat_id}")
+            return True, None
+
+        except pyodbc.Error as error:
+            logger.error(f"Error inserting chat_history: {error}")
+            return False, str(error)
 
     def close_connection(self):
         self.cursor.close()

@@ -521,7 +521,8 @@ def delete_capability(cap_id: int, db: Session = Depends(get_db)):
         data={"capability": {}}
     )
 
-
+import os
+import shutil
 
 @router.post("/createyaml/{config_id}", dependencies=[Depends(verify_token)])
 async def create_yaml(request: Request, config_id: int, db: Session = Depends(get_db), index: Optional[bool] = True):
@@ -537,6 +538,11 @@ async def create_yaml(request: Request, config_id: int, db: Session = Depends(ge
     Returns:
         dict: A dictionary with success status and error message, if any.
     """
+
+    for dirpath, dirnames, filenames in os.walk("../../"):
+        if "__pycache__" in dirnames:
+            pycache_path = os.path.join(dirpath, "__pycache__")
+            shutil.rmtree(pycache_path, ignore_errors=True)
 
     documentations, use_case, is_error = await svc.create_yaml_file(request,config_id, db)
 

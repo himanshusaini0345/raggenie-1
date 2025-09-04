@@ -47,11 +47,16 @@ class SummaryGenerator(AbstractHandler):
                 general_message = response.get("inference",{}).get("general_message")
                 empty_message = response.get("inference",{}).get("empty_message")
                 logger.info(f"empty_message: {empty_message}")
+                language_detector = response.get("language_detector",{})
+                language_type = language_detector.get("language_type","english")
+                if language_type.lower() == "hindi":
+                        language_type = "Romanized Hindi"
+                query_response_length = len(query_response)
                 if query_response and len(query_response) > 0:
                         
                         data_description = ""
                         if query_response:
-                                data_description = f"{general_message} \n {query_response}"
+                                data_description = f"No of data retrieved is {query_response_length} \n {general_message} \n {query_response}"
                         else:
                                 data_description = "None"
                         prompt = '''You are a friendly and helpful assistant. Kindly answer the user's question using only the information provided below.
@@ -69,13 +74,15 @@ class SummaryGenerator(AbstractHandler):
                         - Keep the response concise and to the point.
                         - Do not mention that the information came from the data section.
                         - If there is no relevant data to answer the question, return a gentle, empty response that aligns with the intent—avoid guesses or general assumptions.
-                        - Response should be in plain text format, without markdown or HTML.
+                        - Response should be in plain text format, without markdown or HTML.S
+                        - Response should a insight which should be human speakable
+                        - Make sure the response language is in $language_type
 
-                        Response:
+                        Response($language_type only):
                         '''
 
 
-                        prompt = Template(prompt).safe_substitute(question = response["question"], data_description = data_description)
+                        prompt = Template(prompt).safe_substitute(question = response["question"], data_description = data_description, language_type = language_type)
 
                         logger.debug(f"prompt:{prompt}")
                         model_configs = [{'unique_name': 'llama4', 'name': 'meta-llama/llama-4-scout-17b-16e-instruct', 'api_key': configs.groq_api_key, 'endpoint': 'https://api.groq.com/openai/v1/chat/completions', 'kind': 'grogcloud'}]

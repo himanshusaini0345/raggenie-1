@@ -55,7 +55,12 @@ class PromptGenerator(AbstractHandler):
         for message in previous_messages:
             recal_history += f"[{index}] USER: {message.chat_query}\n"
             answer = message.chat_answer
-            recal_history += f"ASSITANT: query : {answer.get('query','')}\n  data: {answer.get('data',[])[:5]}\n\n"
+            if answer.get('query','') != '':
+                recal_history += f"ASSITANT: query : {answer.get('query','')}\n  data: {answer.get('data',[])[:5]}\n\n"
+            else:
+                chat_summary = message.chat_summary
+                recal_history += f"ASSITANT: {chat_summary}"
+
             
             previous_schemas.extend(message.chat_context.get("rag", {}).get("schema", [])[:2])
 
@@ -75,7 +80,10 @@ class PromptGenerator(AbstractHandler):
 
         context = data_source.__prompt__
         prompt = context.base_prompt
-
+        language_detector = response.get("language_detector",{})
+        language_type = language_detector.get("language_type","english")
+        if language_type.lower() == "hindi":
+            language_type = "Romanized Hindi"
 
         system_prompt = ""
 
@@ -132,6 +140,7 @@ class PromptGenerator(AbstractHandler):
         final_prompt = Template(final_prompt).safe_substitute(
             question=request.get("question", ""),
             suggestions=samples_retrieved,
+            language_type=language_type,
             **self.model_configs.get("use_case", {})
         )
 

@@ -121,6 +121,11 @@ class IntentExtracter(AbstractHandler):
             2.Pay special attention to whether the previous intent has been completed.
             3.Strictly only if the current user query doesn't clearly match an intent, consider the previous messages to identify the most appropriate intent.
             4.Striclty any kind of question if not matching exaclty with their intent samples will go to database_agent 
+    
+            - ONLY output a **valid JSON object**, no Markdown formatting, no explanation text before or after.
+            - DO NOT include anything like "Here is the response" or wrap JSON in triple backticks.
+
+            - Provide a response in strict JSON format with the following structure, extra explanation is strictly prohibited:
 
             Generate a response for the user query '$question' in the following JSON format:
 
@@ -143,9 +148,9 @@ class IntentExtracter(AbstractHandler):
                 previous_intent = previous_intent
             )
             logger.debug(f"intent prompt:{prompt}")
-
-            loader = BaseLoader(model_configs=self.model_configs["models"])
-            infernce_model = loader.load_model(configs.inference_llm_model)
+            model_configs = [{'unique_name': 'llama4', 'name': 'meta-llama/llama-4-maverick-17b-128e-instruct', 'api_key': configs.groq_api_key, 'endpoint': 'https://api.groq.com/openai/v1/chat/completions', 'kind': 'grogcloud'}]
+            loader = BaseLoader(model_configs=model_configs)
+            infernce_model = loader.load_model(configs.secondary_inference_llm_model)
 
             output, response_metadata = infernce_model.do_inference(
                                 prompt, chat_contexts

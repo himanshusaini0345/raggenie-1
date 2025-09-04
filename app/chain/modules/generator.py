@@ -45,7 +45,7 @@ class Generator(AbstractHandler):
 
                 response = request
                 prompt = response["prompt"]
-
+        
                 loader = BaseLoader(model_configs=self.model_configs["models"])
                 infernce_model = loader.load_model(configs.inference_llm_model)
 

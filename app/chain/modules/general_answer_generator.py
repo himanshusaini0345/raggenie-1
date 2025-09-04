@@ -37,7 +37,7 @@ class GeneralAnswerGenerator(AbstractHandler):
                 Returns:
                 str: The response after processing the request, including the generated inference.
                 """
-                logger.info("passing through => generator")
+                logger.info("passing through => general generator")
 
                 response = request
                 prompt = response["prompt"]
@@ -45,8 +45,9 @@ class GeneralAnswerGenerator(AbstractHandler):
                 contexts = request.get("context",[])
                 contexts = contexts[-5:] if len(contexts) >= 5 else contexts
 
-                loader = BaseLoader(model_configs=self.model_configs["models"])
-                infernce_model = loader.load_model(configs.inference_llm_model)
+                model_configs = [{'unique_name': 'llama4', 'name': 'meta-llama/llama-4-maverick-17b-128e-instruct', 'api_key': configs.groq_api_key, 'endpoint': 'https://api.groq.com/openai/v1/chat/completions', 'kind': 'grogcloud'}]
+                loader = BaseLoader(model_configs=model_configs)
+                infernce_model = loader.load_model(configs.secondary_inference_llm_model)
 
                 output, response_metadata = infernce_model.do_inference(
                         prompt, contexts

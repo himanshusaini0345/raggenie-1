@@ -43,14 +43,20 @@ class DocumentRetriever(AbstractHandler):
         logger.info("passing through => document_retriever")
         response = request
         start_time = time.time()
+        question = request['question']
+        language_detector = response.get("language_detector",{})
+        language_type = language_detector.get("language_type","english")
+        if language_type.lower() == "hindi":
+            question = language_detector.get("translated_question",question)
+
         if configs.answer_from_enabled:
             datasource = configs.answer_from
             logger.info(f"datasource:{datasource}")
-            results = [await self.store.find_similar_documentation(datasource, request['question'], 10)]
+            results = [await self.store.find_similar_documentation(datasource,question, 10)]
 
         else:
             tasks = [
-                    self.store.find_similar_documentation(datasource, request['question'], 10)
+                    self.store.find_similar_documentation(datasource, question, 10)
                     for datasource in self.datasources
                 ]
             results = await asyncio.gather(*tasks)

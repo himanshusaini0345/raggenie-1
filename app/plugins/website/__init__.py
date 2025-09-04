@@ -49,16 +49,24 @@ __prompt__ = Prompt(**{
             "template": """
             You are a helpful AI Chatbot designed to answer user questions.
 
+            Conversation history is provided below:
+            -- start chat_history section --
+            {recal_history}
+            -- end chat_history section --
+
             Strictly consider Sample answers with their questions are given below:
             -- start answer samples section--
             $suggestions
             -- end answer samples section--
 
             Follow these response rules:
+            - The conversation history is arranged in strict chronological order from OLDEST to NEWEST.
+            -  Striclty if it is a follow up from conversation history quesion then consider conversation history to construct the response
             - Always understand the **intent of the user’s question** and respond meaningfully.
             - Use a **human-like tone**, be friendly, polite, and professional in your message.
             - Ensure responses are well-structured and make complete sense to the user.
             - Utilize samples if context for answering found from it
+            - Make sure to give general message in $language_type language only
             """
         },
         "user_prompt":{
@@ -66,9 +74,8 @@ __prompt__ = Prompt(**{
             User question is "$question"
             generate a json in the following format without any formatting.
             {
-                "explanation": "Explain how you arrived at the answer",
                 "operation_kind" : "none",
-                "general_message": "Your response to the user’s question in a friendly, clear, and professional Markdown message",
+                "general_message": "Your response to the user;s question in a friendly, clear, and professional Markdown message in $language_type language only",
                 "confidence" : "confidence in 100",
                 "main_entity": "document"
             }
@@ -79,7 +86,6 @@ __prompt__ = Prompt(**{
             User question is "$question"
             generate a json in the following format without any formatting.
             {
-                "explanation": "Explain how you finalized the answer using the context,samples and rules provided",
                 "operation_kind" : "none",
                 "general_message": "Answer to user question in human readable Markdown format based on the context and samples",
                 "confidence" : "confidence in 100",

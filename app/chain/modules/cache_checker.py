@@ -48,6 +48,8 @@ class Cachechecker(AbstractHandler):
 
         response = request
         question = request.get("question", "")
+        language_detector = response.get("language_detector",{})
+        language_type = language_detector.get("language_type","english")
 
         start_time = time.time()
         if configs.answer_from_enabled:
@@ -65,31 +67,46 @@ class Cachechecker(AbstractHandler):
         time_taken = end_time - start_time
         logger.info(f"Time taken for cache retriever: {time_taken}")
 
+        is_translate_required = True
+        for index, out in enumerate(results):
+            if len(out) > 0:
+                is_translate_required = False
+        if is_translate_required:
+            if configs.answer_from_enabled:
+                datasource = configs.answer_from
+                results = [await self.cache.find_similar_cache(datasource, question)]
+
+            else:
+                tasks = [
+                        self.cache.find_similar_cache(datasource, question)
+                        for datasource in self.datasources
+                    ]
+                results = await asyncio.gather(*tasks)
+
         if "rag" not in response:
             response["rag"] = {"suggestions": {}}
 
         for index, out in enumerate(results):
-            opt_cache = []
-
+            opt_cache = []            
             if out and isinstance(out, list) and len(out) > 0:
                 # Check the closest distance against threshold
                 if out[0]['distances'] < self.context_relevance_threshold:
                     distances = [doc['distances'] for doc in out]
                     
-                    # Clustering if enough results
-                    if len(out) > 10:
-                        clusters = Container.clustering().kmeans(distances, 2)
-                        # Find the shortest cluster by average distance
-                        cluster_averages = [sum(cluster)/len(cluster) for cluster in clusters]
-                        shortest_cluster_index = cluster_averages.index(min(cluster_averages))
-                        shortest_cluster = clusters[shortest_cluster_index]
+                    # # Clustering if enough results
+                    # if len(out) > 10:
+                    #     clusters = Container.clustering().kmeans(distances, 2)
+                    #     # Find the shortest cluster by average distance
+                    #     cluster_averages = [sum(cluster)/len(cluster) for cluster in clusters]
+                    #     shortest_cluster_index = cluster_averages.index(min(cluster_averages))
+                    #     shortest_cluster = clusters[shortest_cluster_index]
                         
-                        # Match documents that belong to the shortest cluster
-                        for doc in out:
-                            if any(abs(doc['distances'] - d) < 1e-6 for d in shortest_cluster):  # float-safe comparison
-                                opt_cache.append(doc)
-                    else:
-                        opt_cache = out
+                    #     # Match documents that belong to the shortest cluster
+                    #     for doc in out:S
+                    #         if any(abs(doc['distances'] - d) < 1e-6 for d in shortest_cluster):  # float-safe comparison
+                    #             opt_cache.append(doc)
+                    # else:
+                    opt_cache = out
 
             # Always set, even if opt_cache is empty (helps with fallback logic)
             datasource_key = list(self.datasources.keys())[index]

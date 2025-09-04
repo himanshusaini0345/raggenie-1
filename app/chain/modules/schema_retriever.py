@@ -48,8 +48,13 @@ class SchemaRetriever(AbstractHandler):
         doc_content = rag.get("context", []).get(datasources[0])
 
         auto_context = "\n\n".join(cont.get("document", "") for cont in doc_content)
+        question = request['question']
+        language_detector = response.get("language_detector",{})
+        language_type = language_detector.get("language_type","english")
+        if language_type.lower() == "hindi":
+            question = language_detector.get("translated_question",question)
 
-        out = await self.store.find_similar_schema(datasources[0], request["question"] + "\n" + auto_context, schema_count)
+        out = await self.store.find_similar_schema(datasources[0], question + "\n" + auto_context, schema_count)
 
         if out and len(out) > 0:
             distances = [doc['distances'] for doc in out]

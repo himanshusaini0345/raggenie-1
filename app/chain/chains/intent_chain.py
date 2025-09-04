@@ -7,6 +7,8 @@ from app.chain.modules.post_processor import PostProcessor
 from app.chain.formatter.general_response import Formatter
 from app.chain.modules.context_retreiver import ContextRetreiver
 from app.chain.modules.cache_checker import Cachechecker
+from app.chain.modules.language_detector import LanguageDetector
+
 
 
 from loguru import logger
@@ -52,10 +54,11 @@ class IntentChain:
         self.intent_extractor = IntentExtracter(self.common_context, model_configs, self.data_sources)
         self.cache_checker = Cachechecker(self.common_context, self.data_sources, self.vector_store)
         self.document_retriever = DocumentRetriever(self.vector_store, self.data_sources)
+        self.langauge_detector = LanguageDetector(self.common_context, model_configs)
         self.post_processor = PostProcessor()
         self.router = Router(self.common_context, self.post_processor, intent_chain, general_chain, capability_chain, metadata_chain)
 
-        self.input_formatter.set_next(self.context_retriver).set_next(self.cache_checker).set_next(self.document_retriever).set_next(self.intent_extractor).set_next(self.router).set_next(self.post_processor)
+        self.input_formatter.set_next(self.context_retriver).set_next(self.langauge_detector).set_next(self.cache_checker).set_next(self.document_retriever).set_next(self.intent_extractor).set_next(self.router).set_next(self.post_processor)
 
         self.handler =  self.input_formatter
 
