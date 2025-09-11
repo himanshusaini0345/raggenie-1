@@ -20,6 +20,7 @@ class Router(AbstractHandler):
     """
 
 
+
     def __init__(self, common_context, fallback_handler, intent_handler, general_handler, capability_handler, metadata_handler) -> None:
         """
         Initializes the Router with the provided handlers.

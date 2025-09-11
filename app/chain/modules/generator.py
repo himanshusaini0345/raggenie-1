@@ -4,9 +4,6 @@ from app.loaders.base_loader import BaseLoader
 from app.utils.parser import parse_llm_response
 from app.chain.formatter.general_response import Formatter
 from loguru import logger
-# Save logs to a file
-logger.add("app.log", rotation="10 MB", retention="7 days")
-
 
 
 class Generator(AbstractHandler):

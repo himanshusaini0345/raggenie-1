@@ -173,6 +173,8 @@ class ChromaDataBase(BaseVectorDB):
 
 
     async def _find_similar(self, datasource, query, store, sample_count=3):
+        logger.info(f"sample_count:{sample_count}")
+        logger.info(f"query:{query}")
         res = store.query(
             query_texts=[query],
             n_results=sample_count,

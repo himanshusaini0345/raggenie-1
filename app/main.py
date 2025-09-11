@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from loguru import logger
 from typing import Optional
-
+logger.add("app.log", rotation="10 MB", retention="7 days")
 from app.providers.container import Container
 from app.providers.config import Configs
 from app.providers.context_storage import ContextStorage

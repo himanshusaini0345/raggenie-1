@@ -69,8 +69,10 @@ class Cachechecker(AbstractHandler):
 
         is_translate_required = True
         for index, out in enumerate(results):
+            logger.info(f"out:{out}")
             if len(out) > 0:
                 is_translate_required = False
+        logger.info(f"is_translate_required:{is_translate_required}")
         if is_translate_required:
             if configs.answer_from_enabled:
                 datasource = configs.answer_from

@@ -146,10 +146,9 @@ class AltasMongoDB(BaseVectorDB):
         self._create_index(self.cache_collection, self.cache_index_name)
 
     async def _find_similar(self, datasource, collection, query, count, index_name):
+        logger.info(f"query:{query}")
+        logger.info(f"count:{count}")
         logger.info(f"datasource:{datasource}")
-        logger.info(f"collection:{collection}")
-        logger.info(f"index_name:{index_name}")
-
 
         res = collection.aggregate([
 
