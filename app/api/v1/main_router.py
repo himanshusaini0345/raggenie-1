@@ -124,7 +124,40 @@ async def qna(
     out.pop("chat_context", None)
     chat_id = str(uuid.uuid4())
     datasources = request.app.container.datasources()
-    background_tasks.add_task(save_data, chat_id, context_id, query.content, out, chat_context, user_id,config_id, env_id, db, datasources)
+    # background_tasks.add_task(
+    #     save_data, chat_id, context_id, query.content, out.copy(), chat_context, user_id, config_id, env_id, db, datasources
+    # )
+    resp = await llmchat.create_chat(
+        schemas.ChatHistoryCreate(
+            chat_id = chat_id,
+            chat_context_id=context_id,
+            chat_query=query.content,
+            chat_answer= jsonable_encoder(out),
+            chat_context = jsonable_encoder({}),
+            chat_summary=out.get("summary", query.content),
+            user_id=user_id,
+            configuration_id=config_id,
+            environment_id=env_id
+        ),
+        db
+    )
+    logger.info(f"saving chat to database")
+    if resp.status:
+        chat_id = resp.data["chat"].chat_id
+    if len(out.get("data",[])) == 0 and out.get("intent","") == "database_agent":
+        success, err = datasources.get("database_agent").insert_chat_history(
+        chat_id=chat_id,
+        chat_context_id=context_id,
+        chat_query=query.content,
+        chat_answer=out if len(out) > 0 else {},
+        chat_context={},
+        chat_summary=out.get("summary", query.content),
+        user_id=user_id,
+        primary_chat=True
+        )
+
+        if not success:
+            logger.error(f"Failed to save chat: {err}")
 
     logger.info(f"out:{out}")
 

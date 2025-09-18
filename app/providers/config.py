@@ -151,6 +151,7 @@ class Configs(BaseSettings):
         "senior finance officer",
         "stipend-os (medical)",
         "vice chancellor",
+        "AI",
     ]
 
 

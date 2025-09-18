@@ -2,6 +2,9 @@ from typing import Any
 from loguru import logger
 
 from app.utils.sb_decoder import decode_data
+from datetime import datetime
+from loguru import logger
+from decimal import Decimal
 
 
 class Formatter:
@@ -103,12 +106,17 @@ class Formatter:
         return response
 
     def preprocess_data(self, data):
+        logger.info(f"data:{data}")
         for entry in data:
             for key, value in entry.items():
                 if isinstance(value, str):
                     decoded_value = decode_data(value)
                     if decoded_value != "":
                         entry[key] = decoded_value
+                if isinstance(value, datetime):
+                    entry[key] = value.isoformat()  # Convert datetime to ISO 8601 string
+                elif isinstance(value, Decimal):
+                    entry[key] = float(value)  # Convert Decimal to float
 
         return data
 

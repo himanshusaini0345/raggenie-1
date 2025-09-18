@@ -4,6 +4,7 @@ from app.loaders.base_loader import BaseLoader
 from app.utils.parser import parse_llm_response, markdown_parse_llm_response
 from app.chain.formatter.general_response import Formatter
 from loguru import logger
+from app.utils.sb_decoder import decode_data
 from string import Template
 
 
@@ -53,6 +54,13 @@ class SummaryGenerator(AbstractHandler):
                         language_type = "Romanized Hindi"
                 query_response_length = len(query_response)
                 if query_response and len(query_response) > 0:
+
+                        for entry in query_response:
+                                for key, value in entry.items():
+                                        if isinstance(value, str):
+                                                decoded_value = decode_data(value)
+                                                if decoded_value != "":
+                                                        entry[key] = decoded_value
                         
                         data_description = ""
                         if query_response:
@@ -76,9 +84,10 @@ class SummaryGenerator(AbstractHandler):
                         - If there is no relevant data to answer the question, return a gentle, empty response that aligns with the intent—avoid guesses or general assumptions.
                         - Response should be in plain text format, without markdown or HTML.S
                         - Response should a insight which should be human speakable
+                        - Make sure to response in Maximum 30 words.
                         - Make sure the response language is in $language_type
 
-                        Response($language_type only):
+                        Response($language_type only in Maximum 30 words):
                         '''
 
 

@@ -28,7 +28,7 @@ class Cachechecker(AbstractHandler):
         self.forward_handler = forward_handler
         self.forward = forward
         self.common_context = common_context
-        self.context_relevance_threshold = 4
+        self.context_relevance_threshold = 6
         self.datasources = datasources
 
 
@@ -55,13 +55,18 @@ class Cachechecker(AbstractHandler):
         if configs.answer_from_enabled:
             datasource = configs.answer_from
             results = [await self.cache.find_similar_cache(datasource, question)]
+            results = await asyncio.gather(*tasks)
 
         else:
-            tasks = [
-                    self.cache.find_similar_cache(datasource, question)
-                    for datasource in self.datasources
-                ]
-            results = await asyncio.gather(*tasks)
+            results = []
+            for datasource in self.datasources:
+                res = await self.cache.find_similar_cache(datasource, question)
+                results.append(res)
+            # tasks = [
+            #         self.cache.find_similar_cache(datasource, question)
+            #         for datasource in self.datasources
+            #     ]
+            # results = await asyncio.gather(*tasks)
 
         end_time = time.time()
         time_taken = end_time - start_time
