@@ -108,8 +108,9 @@ async def qna(
     request.app.chain = chain
     request.app.vector_store = vector_store
     user_role = query.role
+    logger.info(f"user_role:{user_role}")
 
-    if user_role == "user" or user_role == "it test":
+    if user_role == "user" or user_role == "it test" or user_role == "ai":
         user_role = "developer"
 
     start_time = time.time()

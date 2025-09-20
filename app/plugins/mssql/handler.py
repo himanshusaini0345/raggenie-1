@@ -31,7 +31,7 @@ class Mssql(Formatter, BasePlugin, QueryPlugin,  PluginMetadataMixin):
         self.connection = None
 
         self.cursor = None
-        self.max_limit = 25
+        self.max_limit = 15
 
 
     def connect(self):

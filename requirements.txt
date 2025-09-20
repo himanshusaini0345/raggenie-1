@@ -47,8 +47,6 @@ google-cloud-core==2.4.1
 google-crc32c==1.6.0
 google-resumable-media==2.7.2
 googleapis-common-protos==1.65.0
-grpcio==1.66.1
-grpcio-status==1.62.3
 h11==0.14.0
 httpcore==1.0.5
 httptools==0.6.1
@@ -79,7 +77,6 @@ mysql-connector-python==9.0.0
 nest-asyncio==1.6.0
 numpy==1.26.4
 oauthlib==3.2.2
-onnxruntime==1.19.2
 orjson==3.10.7
 overrides==7.7.0
 packaging==23.2
@@ -87,7 +84,7 @@ pandas==2.2.3
 pillow==10.4.0
 posthog==3.6.5
 proto-plus==1.24.0
-psycopg2-binary==2.9.9
+psycopg2-binary
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pycparser==2.22
@@ -96,8 +93,8 @@ pydantic-settings==2.5.2
 pydantic_core==2.23.3
 Pygments==2.18.0
 PyJWT==2.9.0
-PyMuPDF==1.24.10
-PyMuPDFb==1.24.10
+PyMuPDF
+PyMuPDFb
 pyodbc==5.2.0
 PyPika==0.48.9
 pyproject_hooks==1.1.0
@@ -130,7 +127,7 @@ sympy==1.13.2
 syncer==2.0.3
 tenacity==8.5.0
 textract==1.5.0
-tokenizers==0.20.0
+tokenizers
 tomark==0.1.4
 tomli==2.0.1
 tqdm==4.66.5

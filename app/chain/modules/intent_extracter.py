@@ -5,7 +5,7 @@ from app.providers.config import configs
 from app.loaders.base_loader import BaseLoader
 from string import Template
 from app.chain.formatter.general_response import Formatter
-from app.utils.parser import parse_llm_response
+from app.utils.parser import parse_llm_response, updated_parse_llm_response
 
 
 class IntentExtracter(AbstractHandler):
@@ -148,7 +148,7 @@ class IntentExtracter(AbstractHandler):
                 previous_intent = previous_intent
             )
             logger.debug(f"intent prompt:{prompt}")
-            model_configs = [{'unique_name': 'llama4', 'name': 'meta-llama/llama-4-maverick-17b-128e-instruct', 'api_key': configs.groq_api_key, 'endpoint': 'https://api.groq.com/openai/v1/chat/completions', 'kind': 'grogcloud'}]
+            model_configs = [{'unique_name': 'llama4', 'name': 'meta-llama/llama-4-scout-17b-16e-instruct', 'api_key': configs.groq_api_key, 'endpoint': 'https://api.groq.com/openai/v1/chat/completions', 'kind': 'grogcloud'}]
             loader = BaseLoader(model_configs=model_configs)
             infernce_model = loader.load_model(configs.secondary_inference_llm_model)
 
@@ -159,7 +159,7 @@ class IntentExtracter(AbstractHandler):
                 return Formatter.format("Oops! Something went wrong. Try Again!",output['error'])
 
             response["available_intents"] = capability_names
-            intent_extractor = parse_llm_response(output['content'])
+            intent_extractor = updated_parse_llm_response(output['content'])
             if intent_extractor.get("intent","").lower() == "out_of_context":
                 intent_extractor["intent"] = "general_enquiry_agent"
 

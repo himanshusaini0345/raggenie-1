@@ -1,5 +1,4 @@
 from app.plugins.mssql.handler import Mssql
-from app.plugins.bigquery.handler import Bigquery
 from app.plugins.website.handler import Website
 from app.plugins.document.handler import Document
 from app.plugins.csv.handler import CSVPlugin
@@ -13,7 +12,6 @@ class DSLoader:
     def load_ds(self):
         db_classes = {
             "mssql": Mssql,
-            "bigquery": Bigquery,
             "website": Website,
             "document" : Document,
             "CSV" : CSVPlugin,
