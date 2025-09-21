@@ -10,6 +10,8 @@ from app.api.v1 import connector
 from sqlalchemy.orm import Session
 from app.utils.database import get_db
 import time
+import os
+import shutil
 import uuid
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi import APIRouter, Depends, File, HTTPException, status, Query, BackgroundTasks, UploadFile, Form
@@ -30,7 +32,7 @@ import io
 from groq import Groq
 from typing import Optional
 import aiofiles
-
+import asyncio
 
 MainRouter = APIRouter()
 
@@ -67,6 +69,18 @@ async def save_data(chat_id, context_id, content, out, chat_context, user_id,con
         if not success:
             logger.error(f"Failed to save chat: {err}")
 
+async def remove_pycaches(root="."):
+    removed = 0
+    for dirpath, dirnames, filenames in os.walk(root):
+        if "__pycache__" in dirnames:
+            pycache_path = os.path.join(dirpath, "__pycache__")
+            try:
+                shutil.rmtree(pycache_path)
+                print(f"Removed: {pycache_path}")
+                removed += 1
+            except Exception as e:
+                print(f"Failed to remove {pycache_path}: {e}")
+    print(f"\n✅ Done. Removed {removed} __pycache__ directories.")
 
 @MainRouter.post("/query", status_code=status.HTTP_201_CREATED)
 async def qna(
@@ -79,97 +93,75 @@ async def qna(
     user_id: int = Query(..., alias="userId"),
     db: Session = Depends(get_db),
 ):
-
-    """
-    Handles user queries and invokes the chain to get an answer from the LLM.
-
-    Args:
-        query (Chat): User query as a Chat model.
-        request (Request): FastAPI request object containing context and app-level dependencies.
-        background_tasks (BackgroundTasks): Background task for asynchronous logging.
-        db (Session): Database session dependency.
-
-    Returns:
-        dict: Response containing the answer to the user's query and the original query text.
-    """
     
-    logger.info(f"{context_id} - {config_id} - query: {query.content}")
-    cached_data = cache_manager.get(int(config_id))
-    if not cached_data:
-        logger.info("configuration was not found in the cache")
-        response = await connector.create_yaml(request, int(config_id), db, False)
-        if response['success'] == True:
-            cached_data = cache_manager.get(int(config_id))
-        else:
-            return
-        
-    chain = cached_data["chain"]
-    vector_store = cached_data['vector_store']
-    request.app.chain = chain
-    request.app.vector_store = vector_store
-    user_role = query.role
-    logger.info(f"user_role:{user_role}")
+    try:
+        logger.info(f"new request {context_id} - {config_id} - query: {query.content}")
+        r_start_time = time.time()
+        await remove_pycaches('.')
+        r_end_time = time.time()
+        total_response_time = r_end_time - r_start_time
+        logger.debug(f" remove cache time:{total_response_time}")
+        cached_data = cache_manager.get(int(config_id))
+        if not cached_data:
+            logger.info("configuration was not found in the cache")
+            response = await connector.create_yaml(request, int(config_id), db, False)
+            if response['success'] == True:
+                cached_data = cache_manager.get(int(config_id))
+            else:
+                return
+            
+        chain = cached_data["chain"]
+        vector_store = cached_data['vector_store']
+        request.app.chain = chain
+        request.app.vector_store = vector_store
+        user_role = query.role
+        logger.info(f"user_role:{user_role}")
 
-    if user_role == "user" or user_role == "it test" or user_role == "ai":
-        user_role = "developer"
+        if user_role == "user" or user_role == "it test" or user_role == "ai":
+            user_role = "developer"
 
-    start_time = time.time()
+        start_time = time.time()
 
-    out = await chain.invoke({
-        "question": query.content,
-        "context_id": context_id,
-        "user_role" : user_role
-    })
-
-    chat_context = out.get("chat_context", {})
-    out.pop("chat_context", None)
-    chat_id = str(uuid.uuid4())
-    datasources = request.app.container.datasources()
-    # background_tasks.add_task(
-    #     save_data, chat_id, context_id, query.content, out.copy(), chat_context, user_id, config_id, env_id, db, datasources
-    # )
-    resp = await llmchat.create_chat(
-        schemas.ChatHistoryCreate(
-            chat_id = chat_id,
-            chat_context_id=context_id,
-            chat_query=query.content,
-            chat_answer= jsonable_encoder(out),
-            chat_context = jsonable_encoder({}),
-            chat_summary=out.get("summary", query.content),
-            user_id=user_id,
-            configuration_id=config_id,
-            environment_id=env_id
-        ),
-        db
-    )
-    logger.info(f"saving chat to database")
-    if resp.status:
-        chat_id = resp.data["chat"].chat_id
-    if len(out.get("data",[])) == 0 and out.get("intent","") == "database_agent":
-        success, err = datasources.get("database_agent").insert_chat_history(
-        chat_id=chat_id,
-        chat_context_id=context_id,
-        chat_query=query.content,
-        chat_answer=out if len(out) > 0 else {},
-        chat_context={},
-        chat_summary=out.get("summary", query.content),
-        user_id=user_id,
-        primary_chat=True
+        out = await chain.invoke({
+            "question": query.content,
+            "context_id": context_id,
+            "user_role" : user_role
+        })
+        chat_context = out.get("chat_context", {})
+        out.pop("chat_context", None)
+        chat_id = str(uuid.uuid4())
+        resp = await llmchat.create_chat(
+            schemas.ChatHistoryCreate(
+                chat_id = chat_id,
+                chat_context_id=context_id,
+                chat_query=query.content,
+                chat_answer= jsonable_encoder(out),
+                chat_context = jsonable_encoder({}),
+                chat_summary=out.get("summary", query.content),
+                user_id=user_id,
+                configuration_id=config_id,
+                environment_id=env_id
+            ),
+            db
         )
+        logger.info(f"saving chat to database")
+        if resp.status:
+            chat_id = resp.data["chat"].chat_id
+        logger.info(f"out:{out}")
+        out.pop("query", None)
+        out.pop("main_entity", None)
+        out.pop("intent", None)
 
-        if not success:
-            logger.error(f"Failed to save chat: {err}")
-
-    logger.info(f"out:{out}")
-
-    end_time = time.time()
-    total_response_time = end_time - start_time
-    logger.debug(f"total_response_time:{total_response_time}")
-    return {
-        "response": out,
-        "query": query.content,
-        "chat_id": chat_id,
-    }
+        end_time = time.time()
+        total_response_time = end_time - start_time
+        logger.debug(f"total_response_time:{total_response_time}")
+        return {
+            "response": out,
+            "query": query.content,
+            "chat_id": chat_id,
+        }
+    except Exception as e:
+        logger.info(f"error in qna api:{e}")
 
 
 #! This api is not in use right now, instead we are using a scheduler for the feedback_correction job
