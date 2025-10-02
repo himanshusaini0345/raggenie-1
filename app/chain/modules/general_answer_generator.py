@@ -49,7 +49,7 @@ class GeneralAnswerGenerator(AbstractHandler):
                 loader = BaseLoader(model_configs=model_configs)
                 infernce_model = loader.load_model(configs.secondary_inference_llm_model)
 
-                output, response_metadata = infernce_model.do_inference(
+                output, response_metadata = await infernce_model.do_inference(
                         prompt, contexts
                 )
                 if output["error"] is not None:

@@ -11,7 +11,7 @@ class OpenAiModelLoader(ModelLoader, LoaderMetadataMixin):
     model: Any = None
     model_config : Any = {}
 
-    def do_inference(self, prompt, previous_messages) -> dict:
+    async def do_inference(self, prompt, previous_messages) -> dict:
         messages = self.messages_format(prompt, previous_messages)
         self.model = BaseLLM(
             url = self.model_config["endpoint"],
@@ -26,7 +26,7 @@ class OpenAiModelLoader(ModelLoader, LoaderMetadataMixin):
             }
         )
 
-        out = self.model._call("")      
+        out = await self.model._acall("")      
         response = self.get_response(out)
         logger.info(f"response: {response}")
         usage = self.get_response_metadata(prompt, response, out)

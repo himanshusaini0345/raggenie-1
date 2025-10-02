@@ -60,10 +60,10 @@ class OutputFormatter(AbstractHandler):
             if response.get("content", "") == "" or response.get("content") is None:
                 response["content"] = "I'm here to help with any questions or tasks you might have - just let me know what you need assistance with!"
 
-            response["main_format"] = "general_chat"
+            # response["main_format"] = "general_chat"
         elif "kind" in response and response["kind"] == "none":
             response["content"] = input_data.get("empty_message", "I didn't find any relevant data regarding this, please reframe your query")
-            response["main_format"] = "general_chat"
+            # response["main_format"] = "general_chat"
 
 
         if "context_id" in request:

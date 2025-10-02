@@ -47,7 +47,7 @@ class Generator(AbstractHandler):
                 infernce_model = loader.load_model(configs.inference_llm_model)
 
 
-                output, response_metadata = infernce_model.do_inference(
+                output, response_metadata = await infernce_model.do_inference(
                         prompt, []
                 )
                 if output["error"] is not None:

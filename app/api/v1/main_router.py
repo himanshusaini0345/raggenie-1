@@ -96,11 +96,11 @@ async def qna(
     
     try:
         logger.info(f"new request {context_id} - {config_id} - query: {query.content}")
-        r_start_time = time.time()
-        await remove_pycaches('.')
-        r_end_time = time.time()
-        total_response_time = r_end_time - r_start_time
-        logger.debug(f" remove cache time:{total_response_time}")
+        # r_start_time = time.time()
+        # await remove_pycaches('.')
+        # r_end_time = time.time()
+        # total_response_time = r_end_time - r_start_time
+        # logger.debug(f" remove cache time:{total_response_time}")
         cached_data = cache_manager.get(int(config_id))
         if not cached_data:
             logger.info("configuration was not found in the cache")
@@ -148,15 +148,21 @@ async def qna(
         if resp.status:
             chat_id = resp.data["chat"].chat_id
         logger.info(f"out:{out}")
-        out.pop("query", None)
-        out.pop("main_entity", None)
-        out.pop("intent", None)
-
         end_time = time.time()
         total_response_time = end_time - start_time
         logger.debug(f"total_response_time:{total_response_time}")
+        # data = jsonable_encoder(out.get("data", []))
+        data = out.get("data", [])
+        normalized_out = {
+                "content": out.get("content", ""),
+                "summary": out.get("summary", ""),
+                "data": data,
+                "kind": out.get("kind", "list"),
+                "role": out.get("role", "assistant"),
+                "context_id" : out.get("context_id", "")
+            }
         return {
-            "response": out,
+            "response": normalized_out,
             "query": query.content,
             "chat_id": chat_id,
         }

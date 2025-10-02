@@ -13,7 +13,7 @@ class GrogcloudLoader(ModelLoader, LoaderMetadataMixin):
 
 
 
-    def do_inference(self, prompt, previous_messages) -> dict:
+    async def do_inference(self, prompt, previous_messages) -> dict:
         messages = self.messages_format(prompt, previous_messages)
 
         self.model = BaseLLM(
@@ -27,7 +27,7 @@ class GrogcloudLoader(ModelLoader, LoaderMetadataMixin):
                 "messages": messages,
             }
         )
-        out = self.model._call("")
+        out = await self.model._acall("")
         logger.debug(out)
         response = self.get_response(out)
         respone_metadata = self.get_response_metadata(prompt, response, out)

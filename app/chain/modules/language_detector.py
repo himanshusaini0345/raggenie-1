@@ -51,7 +51,7 @@ class LanguageDetector(AbstractHandler):
         loader = BaseLoader(model_configs=model_configs)
         infernce_model = loader.load_model(configs.secondary_inference_llm_model)
 
-        output_response, response_metadata = infernce_model.do_inference(
+        output_response, response_metadata = await infernce_model.do_inference(
                 prompt, []
         )
         if output_response["error"] is not None:
