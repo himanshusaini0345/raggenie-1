@@ -115,7 +115,7 @@ async def lifespan(app: FastAPI):
 def create_app(config):
     logger.info("Creating FastAPI app")
 
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(lifespan=lifespan, timeout=300)
 
     # Attach config before lifespan runs
     app.config = config
@@ -150,7 +150,7 @@ def create_app(config):
     # -------------------------------
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://182.74.167.43:8000"],
         allow_credentials=True,
         allow_methods=["OPTIONS", "GET", "POST", "DELETE"],
         allow_headers=["*"],

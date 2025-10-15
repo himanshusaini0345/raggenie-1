@@ -96,11 +96,6 @@ async def qna(
     
     try:
         logger.info(f"new request {context_id} - {config_id} - query: {query.content}")
-        # r_start_time = time.time()
-        # await remove_pycaches('.')
-        # r_end_time = time.time()
-        # total_response_time = r_end_time - r_start_time
-        # logger.debug(f" remove cache time:{total_response_time}")
         cached_data = cache_manager.get(int(config_id))
         if not cached_data:
             logger.info("configuration was not found in the cache")
@@ -148,6 +143,7 @@ async def qna(
         if resp.status:
             chat_id = resp.data["chat"].chat_id
         logger.info(f"out:{out}")
+        
         end_time = time.time()
         total_response_time = end_time - start_time
         logger.debug(f"total_response_time:{total_response_time}")
@@ -167,7 +163,38 @@ async def qna(
             "chat_id": chat_id,
         }
     except Exception as e:
-        logger.info(f"error in qna api:{e}")
+        content ="Sorry, I didn't get that. Could you please provide more context?"
+        normalized_out = {
+                "content": content,
+                "summary": content,
+                "data": [],
+                "kind": "list",
+                "role": "assistant",
+                "context_id" : context_id
+            }
+        chat_id = str(uuid.uuid4())
+        resp = await llmchat.create_chat(
+            schemas.ChatHistoryCreate(
+                chat_id = chat_id,
+                chat_context_id=context_id,
+                chat_query=query.content,
+                chat_answer= jsonable_encoder(normalized_out),
+                chat_context = jsonable_encoder({}),
+                chat_summary=content,
+                user_id=user_id,
+                configuration_id=config_id,
+                environment_id=env_id
+            ),
+            db
+        )
+        logger.info(f"saving chat to database")
+        if resp.status:
+            chat_id = resp.data["chat"].chat_id
+        return {
+            "response": normalized_out,
+            "query": query.content,
+            "chat_id": chat_id,
+        }
 
 
 #! This api is not in use right now, instead we are using a scheduler for the feedback_correction job
@@ -311,10 +338,27 @@ async def voice_qna(
         out.pop("chat_context", None)
         chat_id = str(uuid.uuid4())
         
-        # Step 4: Save to database in background
-        background_tasks.add_task(
-            save_data, chat_id, context_id, transcribed_text, out, 
-            chat_context, user_id, config_id, env_id, db
+        # # Step 4: Save to database in background
+        # background_tasks.add_task(
+        #     save_data, chat_id, context_id, transcribed_text, out, 
+        #     chat_context, user_id, config_id, env_id, db
+        # )
+        response_text = out.get("summary", "")  # Adjust based on your response structure
+
+        chat_id = str(uuid.uuid4())
+        resp = await llmchat.create_chat(
+            schemas.ChatHistoryCreate(
+                chat_id = chat_id,
+                chat_context_id=context_id,
+                chat_query=transcribed_text,
+                chat_answer= jsonable_encoder(out),
+                chat_context = jsonable_encoder({}),
+                chat_summary=response_text,
+                user_id=user_id,
+                configuration_id=config_id,
+                environment_id=env_id
+            ),
+            db
         )
         
         end_time = time.time()
@@ -322,18 +366,17 @@ async def voice_qna(
         logger.info(f"Query processed in {total_response_time:.2f} seconds")
         
         # Step 5: Prepare response
-        response_text = out.get("summary", "")  # Adjust based on your response structure
         logger.info(f"response_text:{response_text}")
         
-        if not voice_output:
-            # Return text response
-            return {
-                "transcription": transcribed_text,
-                "response": out,
-                "query": transcribed_text,
-                "chat_id": chat_id,
-                "processing_time": total_response_time
-            }
+        # if not voice_output:
+        #     # Return text response
+        #     return {
+        #         "transcription": transcribed_text,
+        #         "response": out,
+        #         "query": transcribed_text,
+        #         "chat_id": chat_id,
+        #         "processing_time": total_response_time
+        #     }
         
         # Step 6: Generate speech output using Groq TTS
         logger.info("Generating speech output...")
@@ -359,15 +402,58 @@ async def voice_qna(
                 "X-Processing-Time": str(total_response_time)
             }
         )
-        
-    except HTTPException:
-        raise
+
     except Exception as e:
-        logger.error(f"Error processing voice query: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing voice query: {str(e)}"
+        logger.info(f"error:{e}")
+        response_text ="Sorry, I didn't get that. Could you please provide more context?"
+        normalized_out = {
+                "content": response_text,
+                "summary": response_text,
+                "data": [],
+                "kind": "list",
+                "role": "assistant",
+                "context_id" : context_id
+            }
+        chat_id = str(uuid.uuid4())
+        resp = await llmchat.create_chat(
+            schemas.ChatHistoryCreate(
+                chat_id = chat_id,
+                chat_context_id=context_id,
+                chat_query=transcribed_text,
+                chat_answer= jsonable_encoder(normalized_out),
+                chat_context = jsonable_encoder({}),
+                chat_summary=response_text,
+                user_id=user_id,
+                configuration_id=config_id,
+                environment_id=env_id
+            ),
+            db
         )
+        logger.info(f"saving chat to database")
+        if resp.status:
+            chat_id = resp.data["chat"].chat_id        
+        # Update the TTS call to use the voice_model parameter
+        speech_response = groq_client.audio.speech.create(
+            model="playai-tts",
+            voice="Cheyenne-PlayAI",
+            input=response_text,
+            response_format="mp3"
+        )
+        
+        audio_content = speech_response.read()
+        
+        # Return audio response as streaming response
+        return StreamingResponse(
+            io.BytesIO(audio_content),
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": f"attachment; filename=response_{chat_id}.mp3",
+                "X-Chat-ID": chat_id,
+                "X-Transcription": transcribed_text,
+                "X-Processing-Time": str(total_response_time)
+            }
+        )
+
 
 @MainRouter.post("/text-to-speech", status_code=status.HTTP_200_OK)
 async def text_to_speech(
@@ -387,8 +473,8 @@ async def text_to_speech(
     
     try:
         logger.info(f"Converting text to speech: {text[:50]}...")
-        
-        # Generate speech using Groq
+                
+        # Update the TTS call to use the voice_model parameter
         speech_response = groq_client.audio.speech.create(
             model="playai-tts",
             voice="Cheyenne-PlayAI",
@@ -396,14 +482,20 @@ async def text_to_speech(
             response_format="mp3"
         )
         
-        audio_content = speech_response.content
+        audio_content = speech_response.read()
+        chat_id = str(uuid.uuid4())
+        logger.info(f"chat_id:{chat_id}")
         
         # Return audio response as streaming response
         return StreamingResponse(
             io.BytesIO(audio_content),
             media_type="audio/mpeg",
             headers={
-                "Content-Disposition": f"attachment; filename=tts_{uuid.uuid4().hex[:8]}.mp3"
+                "Content-Disposition": f"attachment; filename=response_{chat_id}.mp3",
+                "X-Chat-ID": chat_id,
+                "X-Transcription": text,
+                "X-Processing-Time": str(5)
+
             }
         )
         

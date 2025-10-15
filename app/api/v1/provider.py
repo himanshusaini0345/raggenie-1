@@ -231,6 +231,7 @@ def test_inference_connections(inference: conn_schemas.InferenceBase):
         error=None,
     )
 
+
 @sample.get("/list", response_model=resp_schemas.CommonResponse, dependencies=[Depends(verify_token)])
 def list_sql(db: Session = Depends(get_db), user_data: dict = Depends(verify_token)):
 
@@ -252,8 +253,6 @@ def list_sql(db: Session = Depends(get_db), user_data: dict = Depends(verify_tok
 
     if not result:
         return commons.is_none_reponse("Sample SQL Not Found", {"sql": []})
-
-
     return resp_schemas.CommonResponse(
         status=True,
         status_code=200,
@@ -518,3 +517,10 @@ def get_all_embeddings():
         error=None,
         data={"embeddings": result}
     )
+
+import time
+@sample.get("/list/test")
+def list_sql():
+    data = "hi"
+    time.sleep(30)
+    return {"sql": data}

@@ -16,7 +16,6 @@ def parse_llm_response(body):
             logger.info(f"parsed llm response: {out}")
         except Exception as e:
             logger.info("error parsing llm response")
-            logger.critical(e)
             out = {}
 
         return out
@@ -44,7 +43,6 @@ def updated_parse_llm_response(body: str):
         logger.info(f"parsed llm response: {out}")
     except Exception as e:
         logger.info("error parsing llm response")
-        logger.critical(e)
         out = {}
 
     return out
@@ -64,7 +62,6 @@ def markdown_parse_llm_response(body):
             out = json.loads(text)
         except Exception as e:
             logger.info("error parsing llm response")
-            logger.critical(e)
             out = {}
 
         return out

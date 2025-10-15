@@ -27,7 +27,9 @@ def llm(ctx) -> None:
     uvicorn.run(app,
                 host="0.0.0.0",
                 port=configs.application_port,
-                reload=False)
+                reload=False,
+                timeout_keep_alive=300,        # keep idle connections for 30s
+                timeout_graceful_shutdown=300)
 
     # except Exception as e:
     #     logger.critical(f"Failed to start the LLM server: {e}")
